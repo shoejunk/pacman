@@ -1,0 +1,106 @@
+Pac-Man Design Document
+1. Game Overview
+Genre: Maze chase arcade game
+Platform: PC
+Target Audience: Casual gamers, retro game enthusiasts, and arcade fans.
+Core Concept: Guide a character through a maze, eating pellets and avoiding enemies, with power-ups that temporarily turn the tables on adversaries.
+2. Game Concept and Objectives
+Primary Objective: Clear each maze by consuming all pellets while avoiding contact with roaming ghosts.
+Secondary Objectives:
+Collect bonus items (e.g., fruits) for extra points.
+Use power-ups (power pellets) to turn ghosts vulnerable and earn bonus points by consuming them.
+Unique Selling Points:
+Simple, intuitive controls.
+Increasing difficulty with each level.
+Iconic characters and recognizable art style that pay homage to the classic arcade era.
+3. Gameplay Mechanics
+3.1 Player Movement and Controls
+Movement: Pac-Man moves in four cardinal directions (up, down, left, right) using arrow keys
+Grid-Based Navigation: The maze is segmented into a grid, ensuring precise movement and collision detection.
+Responsiveness: Immediate feedback on input with smooth transitions between grid cells.
+3.2 Maze and Pellet System
+Maze Layout:
+Fixed, labyrinth-style maze with predetermined pathways.
+Special tunnels on the sides enable wrap-around movement.
+Pellets:
+Small dots scattered throughout the maze.
+Collecting all pellets clears the level.
+Bonus Items:
+Fruits or other themed icons appear intermittently to grant bonus points when collected.
+3.3 Ghosts and AI Behavior
+Characters: Four ghosts, each with distinct colors and personalities:
+Blinky (Red): Chases Pac-Man directly.
+Pinky (Pink): Attempts to position ahead of Pac-Man.
+Inky (Blue): Uses a more unpredictable, ambivalent strategy.
+Clyde (Orange): Alternates between chasing and fleeing.
+When a power pellet is consumed, ghosts switch to a vulnerable state, indicated by a color change and slower movement.
+Collision Dynamics:
+Contact with a ghost in normal mode results in a life loss.
+Contact during the vulnerable state allows Pac-Man to "eat" the ghost for bonus points.
+3.4 Scoring and Level Progression
+Scoring:
+Points awarded for every pellet and bonus item collected.
+Higher bonus points for consuming ghosts during their vulnerable state.
+Level Progression:
+Difficulty increases with each level (e.g., faster ghost speeds, slight modifications to maze layout).
+Progressive challenges to keep players engaged as they advance.
+4. Art and Audio Direction
+4.1 Visual Style
+Art Style:
+Minimalist and colorful, employing retro pixel art or simple vector graphics.
+Clear, distinctive character designs that evoke the original arcade aesthetics.
+Animations:
+Smooth, looping animations for Pac-Man’s chomping motion.
+Simple yet expressive animations for ghosts, especially when transitioning to a vulnerable state.
+4.2 Audio
+Sound Effects:
+Iconic arcade sound effects for pellet consumption, ghost interactions, and power-up activations.
+Background Music:
+A looping, upbeat track with a retro feel that heightens the arcade atmosphere.
+Audio Cues:
+Distinct audio signals for life loss, level completion, and bonus item collection to provide clear feedback.
+5. Technical Specifications
+5.1 Engine and Tools
+Input Handling:
+Support for keyboard.
+Rendering:
+Efficient 2D sprite rendering with smooth animation cycles and minimal latency.
+5.2 Collision Detection and Physics
+Collision System:
+Grid-based collision detection for accurate pellet collection and ghost encounters.
+Physics:
+Simple movement physics with no complex simulation required; focus is on timing and precise input.
+6. User Interface (UI) and HUD
+HUD Elements:
+Score Display: Constantly visible at the top or side of the screen.
+Lives Counter: Visual representation of remaining lives.
+Level Indicator: Current level information.
+Menus:
+Main menu for starting the game, viewing high scores, and accessing options.
+Pause menu with resume, restart, and quit options.
+Game over screen with final score and high score submission.
+7. Level Design
+7.1 Maze Structure
+Fixed Layout:
+Consistent pellet and wall placement designed for balanced gameplay.
+Variations:
+Slight changes in maze structure for advanced levels to increase difficulty.
+Introduction of obstacles or alternative routes in later levels.
+7.2 Difficulty Scaling
+Ghost Speed and Behavior:
+Incrementally increase ghost speed with each new level.
+8. Game Flow and State Management
+8.1 Core Game States
+Startup: Splash screen followed by the main menu.
+Gameplay: Main loop where the player navigates the maze.
+Pause: Ability to pause and resume the game.
+Game Over: Triggered by losing all lives, with options to restart or return to the main menu.
+Level Transition: Brief interstitial screens between levels with score and performance summary.
+8.2 Event Handling
+Timed Events:
+Power pellet effects (duration of ghost vulnerability).
+Ghost behavior switching after a set period.
+Input Events:
+Continuous polling for responsive player controls.
+State Transitions:
+Clear, logical transitions between game states to ensure smooth gameplay.
