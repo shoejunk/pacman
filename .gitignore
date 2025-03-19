@@ -171,3 +171,6 @@ Desktop.ini
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Logs
+logs/
