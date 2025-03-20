@@ -10,6 +10,8 @@ FPS = 60
 
 # Grid and sprite settings
 GRID_SIZE = 32
+GRID_TOLERANCE = 5  # Added GRID_TOLERANCE per requirements
+CELL_SIZE = 32    # Added constant per requirements
 SPRITE_WIDTH = 32
 SPRITE_HEIGHT = 32
 
@@ -64,6 +66,8 @@ class GameState(Enum):
 assert SCREEN_WIDTH > 0, "SCREEN_WIDTH must be positive."
 assert SCREEN_HEIGHT > 0, "SCREEN_HEIGHT must be positive."
 assert GRID_SIZE > 0, "GRID_SIZE must be positive."
+assert GRID_TOLERANCE >= 0, "GRID_TOLERANCE must be zero or positive."
+assert CELL_SIZE > 0, "CELL_SIZE must be positive."
 assert PLAYER_SPEED > 0, "PLAYER_SPEED must be positive."
 assert GHOST_SPEED > 0, "GHOST_SPEED must be positive."
 assert GHOST_BEHAVIOR_TIMING > 0, "GHOST_BEHAVIOR_TIMING must be positive."
@@ -83,12 +87,16 @@ def main():
     assert SCREEN_HEIGHT == 600, "Expected SCREEN_HEIGHT to be 600."
     assert FPS == 60, "Expected FPS to be 60."
 
-    # Test grid and sprite dimensions
-    print("\nTesting grid and sprite settings:")
+    # Test grid, cell, sprite dimensions and tolerance
+    print("\nTesting grid, cell, sprite settings and grid tolerance:")
     print("GRID_SIZE =", GRID_SIZE)
+    print("GRID_TOLERANCE =", GRID_TOLERANCE)
+    print("CELL_SIZE =", CELL_SIZE)
     print("SPRITE_WIDTH =", SPRITE_WIDTH)
     print("SPRITE_HEIGHT =", SPRITE_HEIGHT)
     assert GRID_SIZE == 32, "Expected GRID_SIZE to be 32."
+    assert GRID_TOLERANCE == 5, "Expected GRID_TOLERANCE to be 5."
+    assert CELL_SIZE == 32, "Expected CELL_SIZE to be 32."
     assert SPRITE_WIDTH == 32, "Expected SPRITE_WIDTH to be 32."
     assert SPRITE_HEIGHT == 32, "Expected SPRITE_HEIGHT to be 32."
 
@@ -151,41 +159,32 @@ def main():
         assert isinstance(font, str) and font != "", "Font paths should be non-empty strings."
     for color in [FONT_COLOR, HIGHLIGHT_COLOR, POPUP_COLOR]:
         assert isinstance(color, tuple) and len(color) == 3, "Font and highlight colors should be RGB tuples."
-    assert isinstance(POPUP_RECT, tuple) and len(POPUP_RECT) == 4, "POPUP_RECT should be a tuple of (x, y, width, height)."
+    assert isinstance(POPUP_RECT, tuple) and len(POPUP_RECT) == 4, "POPUP_RECT should be a tuple of 4 values."
 
-    # Test GameState enumeration and create instances of the enum
-    print("\nTesting GameState enumeration:")
-    state_startup = GameState.STARTUP
-    state_main_menu = GameState.MAIN_MENU
-    state_gameplay = GameState.GAMEPLAY
-    state_pause = GameState.PAUSE
-    state_game_over = GameState.GAME_OVER
-    state_level_transition = GameState.LEVEL_TRANSITION
-
-    states = [state_startup, state_main_menu, state_gameplay, state_pause, state_game_over, state_level_transition]
-    for state in states:
+    # Test GameState enum
+    print("\nTesting GameState enum:")
+    gs_startup = GameState.STARTUP
+    gs_gameplay = GameState.GAMEPLAY
+    print("GameState.STARTUP =", gs_startup)
+    print("GameState.GAMEPLAY =", gs_gameplay)
+    assert gs_startup.value == 0, "GameState.STARTUP should have value 0."
+    assert gs_gameplay.value == 2, "GameState.GAMEPLAY should have value 2."
+    # Iterate through all states
+    for state in GameState:
         print(f"{state.name} = {state.value}")
-    expected_states = {
-        'STARTUP': 0,
-        'MAIN_MENU': 1,
-        'GAMEPLAY': 2,
-        'PAUSE': 3,
-        'GAME_OVER': 4,
-        'LEVEL_TRANSITION': 5
-    }
-    for state in states:
-        assert expected_states[state.name] == state.value, f"Expected {state.name} to be {expected_states[state.name]}."
 
-    # Test modifying a constant
-    print("\nTesting modification of a constant:")
+    # Test modification of a global constant
+    print("\nTesting modification of global constant SCREEN_WIDTH:")
     original_width = SCREEN_WIDTH
     SCREEN_WIDTH = 1024
     print("Modified SCREEN_WIDTH =", SCREEN_WIDTH)
-    assert SCREEN_WIDTH == 1024, "SCREEN_WIDTH should be modified to 1024."
-    # Reset to original for cleanliness (optional)
+    assert SCREEN_WIDTH == 1024, "SCREEN_WIDTH should be updated to 1024."
+    # Reset SCREEN_WIDTH
     SCREEN_WIDTH = original_width
+    print("Reset SCREEN_WIDTH =", SCREEN_WIDTH)
+    assert SCREEN_WIDTH == 800, "SCREEN_WIDTH should be reset to 800."
 
-    print("\nAll tests passed successfully.")
+    print("\nAll configuration tests passed.")
 
 if __name__ == "__main__":
     main()

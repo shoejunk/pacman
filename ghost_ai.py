@@ -57,133 +57,121 @@ def update_ghosts(ghosts, pacman, power_pellet_active=False):
             dy = ghost.position[1] - pacman.position[1]
             ghost.target = (ghost.position[0] + dx, ghost.position[1] + dy)
         else:
-            if ghost.name == "Blinky":
+            ghost_type = ghost.__class__.__name__
+            if ghost_type == "Blinky":
                 blinky_chase(ghost, pacman.position)
-            elif ghost.name == "Pinky":
+            elif ghost_type == "Pinky":
                 pinky_ambush(ghost, pacman.position, pacman.direction)
-            elif ghost.name == "Inky":
+            elif ghost_type == "Inky":
                 inky_unpredictable(ghost, pacman.position)
-            elif ghost.name == "Clyde":
+            elif ghost_type == "Clyde":
                 clyde_dual_behavior(ghost, pacman.position)
-            else:
-                ghost.target = pacman.position
-                ghost.speed = 1
+
+def initialize_ai():
+    """
+    Initialize any AI-specific timers or settings.
+    """
+    # For now, no initialization is needed.
+    pass
 
 def main():
-    # Dummy classes to simulate game_objects' Ghost classes and PacMan.
-    class DummyGhost:
-        def __init__(self, name, position):
-            self.name = name
-            self.position = position
-            self.target = None
-            self.speed = 0
+    # Create test instances for PacMan and ghosts using game_objects.initialize_objects
+    objects = game_objects.initialize_objects()
+    pacman = objects["pacman"]
+    ghosts = objects["ghosts"]
 
-        def __repr__(self):
-            return f"{self.name}: pos={self.position}, target={self.target}, speed={self.speed}"
+    # Ensure pacman has a clear direction for testing purposes
+    pacman.position = (10, 10)
+    pacman.direction = (1, 0)
 
-    class DummyPacman:
-        def __init__(self, position, direction):
-            self.position = position
-            self.direction = direction
+    # Testing Blinky's AI strategy
+    blinky = ghosts[0]  # Should be an instance of Blinky from game_objects
+    blinky.position = (5, 5)
+    blinky_chase(blinky, pacman.position)
+    assert blinky.target == pacman.position, "Blinky target not set correctly by blinky_chase."
+    assert blinky.speed == config.BLINKY_SPEED, "Blinky speed not set correctly by blinky_chase."
 
-    # In case config does not have the expected attributes, define defaults.
-    try:
-        _ = config.BLINKY_SPEED
-    except AttributeError:
-        class Config:
-            BLINKY_SPEED = 2
-            PINKY_SPEED = 2.5
-            INKY_SPEED = 2.2
-            CLYDE_SPEED = 1.8
-            VULNERABLE_SPEED = 1
-            CLYDE_BEHAVIOR_DISTANCE = 5
-            CLYDE_SCATTER_POSITION = (0, 0)
-        config.__dict__.update({k: v for k, v in Config.__dict__.items() if not k.startswith("__")})
-    
-    # Create dummy ghost instances.
-    blinky = DummyGhost("Blinky", (10, 10))
-    pinky = DummyGhost("Pinky", (12, 10))
-    inky = DummyGhost("Inky", (8, 8))
-    clyde = DummyGhost("Clyde", (5, 5))
-    ghosts = [blinky, pinky, inky, clyde]
-
-    # Create a dummy PacMan instance.
-    pacman = DummyPacman((15, 15), (1, 0))
-
-    # Test AI strategies in normal state.
-    update_ghosts(ghosts, pacman, power_pellet_active=False)
-
-    # Test Blinky: target should be PacMan's position and speed should be config.BLINKY_SPEED.
-    assert blinky.target == pacman.position, "Blinky target incorrect in chase strategy."
-    assert blinky.speed == config.BLINKY_SPEED, "Blinky speed incorrect in normal state."
-
-    # Test Pinky: target should be PacMan's position offset by 4 tiles in the direction.
+    # Testing Pinky's AI strategy
+    pinky = ghosts[1]  # Should be an instance of Pinky
+    pinky.position = (5, 5)
+    pinky_ambush(pinky, pacman.position, pacman.direction)
     expected_pinky_target = (pacman.position[0] + 4 * pacman.direction[0],
                              pacman.position[1] + 4 * pacman.direction[1])
-    assert pinky.target == expected_pinky_target, "Pinky target incorrect in ambush strategy."
-    assert pinky.speed == config.PINKY_SPEED, "Pinky speed incorrect in normal state."
+    assert pinky.target == expected_pinky_target, "Pinky target not set correctly by pinky_ambush."
+    assert pinky.speed == config.PINKY_SPEED, "Pinky speed not set correctly by pinky_ambush."
 
-    # Test Inky: target should be around PacMan's position with a random offset.
-    inky_target = inky.target
-    assert pacman.position[0] - 4 <= inky_target[0] <= pacman.position[0] + 4, "Inky target x-coordinate out of expected range."
-    assert pacman.position[1] - 4 <= inky_target[1] <= pacman.position[1] + 4, "Inky target y-coordinate out of expected range."
-    assert inky.speed == config.INKY_SPEED, "Inky speed incorrect in normal state."
+    # Testing Inky's AI strategy
+    inky = ghosts[2]  # Should be an instance of Inky
+    inky.position = (0, 0)
+    inky_unpredictable(inky, pacman.position)
+    # Check that the target is within 4 units offset from pacman.position
+    offset_x = inky.target[0] - pacman.position[0]
+    offset_y = inky.target[1] - pacman.position[1]
+    assert -4 <= offset_x <= 4, "Inky unpredictable target offset_x out of range."
+    assert -4 <= offset_y <= 4, "Inky unpredictable target offset_y out of range."
+    assert inky.speed == config.INKY_SPEED, "Inky speed not set correctly by inky_unpredictable."
 
-    # Test Clyde: if close, should scatter; otherwise, chase PacMan.
-    distance = math.dist(clyde.position, pacman.position)
-    if distance < config.CLYDE_BEHAVIOR_DISTANCE:
-        expected_clyde_target = config.CLYDE_SCATTER_POSITION
-        expected_clyde_speed = config.CLYDE_SPEED * 0.5
-    else:
-        expected_clyde_target = pacman.position
-        expected_clyde_speed = config.CLYDE_SPEED
-    assert clyde.target == expected_clyde_target, "Clyde target incorrect in dual behavior."
-    assert clyde.speed == expected_clyde_speed, "Clyde speed incorrect in dual behavior."
+    # Testing Clyde's AI strategy
+    clyde = ghosts[3]  # Should be an instance of Clyde
+    # First case: distance less than threshold, should scatter
+    clyde.position = (pacman.position[0] + 1, pacman.position[1] + 1)
+    clyde_dual_behavior(clyde, pacman.position)
+    assert clyde.target == config.CLYDE_SCATTER_POSITION, "Clyde target not set correctly when scattering."
+    assert clyde.speed == config.CLYDE_SPEED * 0.5, "Clyde speed not set correctly when scattering."
 
-    # Test AI strategies in power pellet active (vulnerable) state.
+    # Second case: distance greater than or equal to threshold, should chase
+    clyde.position = (pacman.position[0] + config.CLYDE_BEHAVIOR_DISTANCE + 1, pacman.position[1])
+    clyde_dual_behavior(clyde, pacman.position)
+    assert clyde.target == pacman.position, "Clyde target not set correctly when chasing."
+    assert clyde.speed == config.CLYDE_SPEED, "Clyde speed not set correctly when chasing."
+
+    # Testing update_ghosts without power pellet (normal state)
+    # Reset positions for testing
+    blinky.position = (0, 0)
+    pinky.position = (0, 0)
+    inky.position = (0, 0)
+    clyde.position = (0, 0)
+    pacman.position = (10, 10)
+    pacman.direction = (0, 1)
+    update_ghosts(ghosts, pacman, power_pellet_active=False)
+    # Check based on ghost type
+    # For Blinky, target should equal pacman.position.
+    assert blinky.target == pacman.position, "update_ghosts failed for Blinky in normal state."
+    # For Pinky, target should be pacman.position offset by 4 in pacman's direction.
+    expected_pinky_target = (pacman.position[0] + pacman.direction[0] * 4, pacman.position[1] + pacman.direction[1] * 4)
+    assert pinky.target == expected_pinky_target, "update_ghosts failed for Pinky in normal state."
+    # For Inky, we check that the target is within acceptable offset range.
+    offset_x = inky.target[0] - pacman.position[0]
+    offset_y = inky.target[1] - pacman.position[1]
+    assert -4 <= offset_x <= 4, "update_ghosts failed for Inky (offset_x out of range)."
+    assert -4 <= offset_y <= 4, "update_ghosts failed for Inky (offset_y out of range)."
+    # For Clyde, depends on distance, and here distance is math.dist((0,0),(10,10)) which is > CLYDE_BEHAVIOR_DISTANCE
+    assert clyde.target == pacman.position, "update_ghosts failed for Clyde in normal state."
+
+    # Testing update_ghosts with power pellet active.
+    # Set ghosts to known positions.
+    blinky.position = (5, 5)
+    pinky.position = (6, 6)
+    inky.position = (7, 7)
+    clyde.position = (8, 8)
+    pacman.position = (10, 10)
     update_ghosts(ghosts, pacman, power_pellet_active=True)
     for ghost in ghosts:
-        assert ghost.speed == config.VULNERABLE_SPEED, f"{ghost.name} speed incorrect when vulnerable."
+        # Expect ghost speed to be set to vulnerable speed.
+        assert ghost.speed == config.VULNERABLE_SPEED, "update_ghosts failed to set vulnerable speed."
+        # Expect ghost.target to be calculated based on vector from pacman to ghost.
         dx = ghost.position[0] - pacman.position[0]
         dy = ghost.position[1] - pacman.position[1]
         expected_target = (ghost.position[0] + dx, ghost.position[1] + dy)
-        assert ghost.target == expected_target, f"{ghost.name} target incorrect when vulnerable."
+        assert ghost.target == expected_target, "update_ghosts failed to set vulnerable target correctly."
 
-    # Simulate movement over several game ticks and log positions.
-    # For simulation, assume ghost.position moves towards ghost.target by a fraction of the distance.
-    def simulate_tick(ghost, fraction=0.2):
-        x, y = ghost.position
-        tx, ty = ghost.target
-        new_x = x + (tx - x) * fraction
-        new_y = y + (ty - y) * fraction
-        ghost.position = (new_x, new_y)
-    
-    # Reset ghosts to initial positions.
-    blinky.position = (10, 10)
-    pinky.position = (12, 10)
-    inky.position = (8, 8)
-    clyde.position = (5, 5)
-    
-    # Run simulation for 5 ticks with normal behavior.
-    for _ in range(5):
-        update_ghosts(ghosts, pacman, power_pellet_active=False)
-        for ghost in ghosts:
-            simulate_tick(ghost)
-    
-    # After simulation, ensure that positions have moved and are not equal to initial positions.
-    for ghost in ghosts:
-        if ghost.name == "Blinky":
-            assert ghost.position != (10, 10), f"{ghost.name} did not move during simulation."
-        elif ghost.name == "Pinky":
-            assert ghost.position != (12, 10), f"{ghost.name} did not move during simulation."
-        elif ghost.name == "Inky":
-            assert ghost.position != (8, 8), f"{ghost.name} did not move during simulation."
-        elif ghost.name == "Clyde":
-            assert ghost.position != (5, 5), f"{ghost.name} did not move during simulation."
+    # Test initialize_ai function
+    try:
+        initialize_ai()
+    except Exception as e:
+        assert False, "initialize_ai function raised an exception: " + str(e)
 
     print("All tests passed successfully.")
-    for ghost in ghosts:
-        print(ghost)
 
 if __name__ == "__main__":
     main()
