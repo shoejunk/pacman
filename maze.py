@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import pygame
 
 try:
     from config import TILE_SIZE, MAZE_OFFSET
@@ -76,6 +77,29 @@ class Maze:
            For this implementation, it prints a textual representation to the console."""
         for row in self.layout:
             print("".join(row))
+
+    def draw(self, surface):
+        """Draws the maze on the given Pygame surface using Pygame drawing functions."""
+        for row in range(self.rows):
+            for col in range(self.cols):
+                cell = self.layout[row][col]
+                x, y = self.grid_to_screen(row, col)
+                rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+                if cell == 'W':
+                    # Draw wall as blue rectangle
+                    pygame.draw.rect(surface, (0, 0, 255), rect)
+                elif cell == 'P':
+                    # Draw pellet as small white circle
+                    center = (x + TILE_SIZE // 2, y + TILE_SIZE // 2)
+                    radius = TILE_SIZE // 6
+                    pygame.draw.circle(surface, (255, 255, 255), center, radius)
+                elif cell == 'T':
+                    # Draw tunnel cell as gray rectangle with a border
+                    pygame.draw.rect(surface, (128, 128, 128), rect)
+                    pygame.draw.rect(surface, (0, 0, 0), rect, 1)
+                else:
+                    # For empty space, optionally draw a background rectangle
+                    pygame.draw.rect(surface, (0, 0, 0), rect)
 
 def initialize_maze():
     """Initialize and return a Maze instance."""

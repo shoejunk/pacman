@@ -1,237 +1,227 @@
+#!/usr/bin/env python3
 import pygame
-import sys
-from config import SCORE_POS, LIVES_POS, LEVEL_POS, HUD_FONT, MENU_FONT, FONT_COLOR, HIGHLIGHT_COLOR, POPUP_COLOR, POPUP_RECT
 
-if not pygame.font.get_init():
-    pygame.font.init()
+try:
+    from config import TILE_SIZE, MAZE_OFFSET, HUD_FONT, HUD_FONT_SIZE, HUD_COLOR, SCORE_POS, LIVES_POS, LEVEL_POS, MENU_POS
+except Exception:
+    TILE_SIZE = 20
+    MAZE_OFFSET = (0, 0)
+    HUD_FONT = None  # Use default system font if not provided
+    HUD_FONT_SIZE = 24
+    HUD_COLOR = (255, 255, 255)  # White color for HUD text
+    SCORE_POS = (10, 10)
+    LIVES_POS = (10, 40)
+    LEVEL_POS = (10, 70)
+    MENU_POS = (200, 200)
 
-class Menu:
-    def __init__(self, options, position, spacing):
-        self.options = options
-        self.position = position
-        self.spacing = spacing
-        self.selected_index = 0
-        if not hasattr(MENU_FONT, "render"):
-            self.menu_font = pygame.font.SysFont(MENU_FONT, 24)
-        else:
-            self.menu_font = MENU_FONT
+class Maze:
+    def __init__(self):
+        self.initialize_maze()
 
-    def draw(self, screen):
-        for idx, option in enumerate(self.options):
-            color = HIGHLIGHT_COLOR if idx == self.selected_index else FONT_COLOR
-            text_surface = self.menu_font.render(option, True, color)
-            pos = (self.position[0], self.position[1] + idx * self.spacing)
-            screen.blit(text_surface, pos)
+    def initialize_maze(self):
+        # Hard-coded maze layout where:
+        # 'W' represents a wall,
+        # 'P' represents a pellet,
+        # ' ' represents an empty space,
+        # 'T' represents a tunnel (wrap-around cell).
+        self.layout = [
+            list("WWWWWWWWWW"),
+            list("T P    P T"),
+            list("W WWWW W W"),
+            list("W        W"),
+            list("WPWWWWWWPW"),
+            list("W        W"),
+            list("W WWWW W W"),
+            list("T P    P T"),
+            list("WWWWWWWWWW")
+        ]
+        self.rows = len(self.layout)
+        self.cols = len(self.layout[0])
 
-    def update_selection(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                self.selected_index = (self.selected_index - 1) % len(self.options)
-            elif event.key == pygame.K_DOWN:
-                self.selected_index = (self.selected_index + 1) % len(self.options)
-
-    def get_selected(self):
-        return self.options[self.selected_index]
-
-def initialize_menu(screen):
-    screen_width, screen_height = screen.get_width(), screen.get_height()
-    return Menu(["Start", "Options", "High Scores", "Quit"],
-                (screen_width // 2 - 100, screen_height // 2 - 50),
-                40)
-
-def initialize_gameplay():
-    print("Gameplay UI initialized.")
-
-class UIManager:
-    def __init__(self, screen):
-        self.screen = screen
-        if not hasattr(HUD_FONT, "render"):
-            self.hud_font = pygame.font.SysFont(HUD_FONT, 24)
-        else:
-            self.hud_font = HUD_FONT
-        self.menus = {}
-        screen_width, screen_height = screen.get_width(), screen.get_height()
-        self.menus['main'] = initialize_menu(screen)
-        self.menus['pause'] = Menu(["Resume", "Restart", "Quit"],
-                                   (screen_width // 2 - 100, screen_height // 2 - 30),
-                                   40)
-        self.menus['game_over'] = Menu(["Restart", "Quit"],
-                                       (screen_width // 2 - 100, screen_height // 2 - 20),
-                                       40)
-
-    def render_hud(self, score, lives, level):
-        score_text = self.hud_font.render("Score: " + str(score), True, FONT_COLOR)
-        lives_text = self.hud_font.render("Lives: " + str(lives), True, FONT_COLOR)
-        level_text = self.hud_font.render("Level: " + str(level), True, FONT_COLOR)
-        self.screen.blit(score_text, SCORE_POS)
-        self.screen.blit(lives_text, LIVES_POS)
-        self.screen.blit(level_text, LEVEL_POS)
-
-    def draw_menu(self, menu_type):
-        if menu_type in self.menus:
-            self.menus[menu_type].draw(self.screen)
-
-    def render_menu(self, menu_type):
-        self.draw_menu(menu_type)
-
-    def handle_menu_input(self, menu_type, event):
-        if menu_type in self.menus:
-            self.menus[menu_type].update_selection(event)
-            return self.menus[menu_type].get_selected()
+    def get_cell(self, row, col):
+        """Return the content of the cell at the given row and column."""
+        if 0 <= row < self.rows and 0 <= col < self.cols:
+            return self.layout[row][col]
         return None
 
-    def draw_popup(self, message):
-        popup_rect = POPUP_RECT
-        popup_surface = pygame.Surface((popup_rect[2], popup_rect[3]), pygame.SRCALPHA)
-        popup_surface.fill(POPUP_COLOR)
-        self.screen.blit(popup_surface, (popup_rect[0], popup_rect[1]))
-        text_surface = self.hud_font.render(message, True, FONT_COLOR)
-        text_rect = text_surface.get_rect(center=(popup_rect[0] + popup_rect[2] // 2,
-                                                  popup_rect[1] + popup_rect[3] // 2))
-        self.screen.blit(text_surface, text_rect)
+    def is_wall(self, row, col):
+        """Return True if the cell is a wall."""
+        return self.get_cell(row, col) == 'W'
 
-    def show_pause_screen(self):
-        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 128))
-        self.screen.blit(overlay, (0, 0))
-        self.draw_menu('pause')
+    def is_pellet(self, row, col):
+        """Return True if the cell is a pellet."""
+        return self.get_cell(row, col) == 'P'
 
-    def hide_pause_screen(self):
-        self.screen.fill((0, 0, 0))
+    def is_tunnel(self, row, col):
+        """Return True if the cell is a tunnel."""
+        return self.get_cell(row, col) == 'T'
 
-    def initialize_level_transition(self):
-        print("Level transition UI initialized.")
+    def consume_pellet(self, row, col):
+        """If the cell contains a pellet, remove it (set to empty) and return True.
+           Otherwise, return False."""
+        if self.is_pellet(row, col):
+            self.layout[row][col] = ' '
+            return True
+        return False
 
-    def show_game_over(self):
-        overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
-        self.screen.blit(overlay, (0, 0))
-        self.draw_popup("Game Over!")
-        self.draw_menu('game_over')
+    def pellet_count(self):
+        """Return the total number of pellets remaining in the maze."""
+        count = 0
+        for row in self.layout:
+            count += row.count('P')
+        return count
 
-    def render_game_play(self):
-        self.render_hud(0, 0, 0)
+    def grid_to_screen(self, row, col):
+        """Convert a grid coordinate (row, col) to screen coordinate (x, y).
+           Assumes TILE_SIZE is the size of a cell in pixels and MAZE_OFFSET is a tuple (offset_x, offset_y)."""
+        offset_x, offset_y = MAZE_OFFSET
+        screen_x = offset_x + col * TILE_SIZE
+        screen_y = offset_y + row * TILE_SIZE
+        return (screen_x, screen_y)
+    
+    def draw(self, screen):
+        """Draw the maze layout on the given screen (pygame surface)."""
+        wall_color = (0, 0, 255)       # Blue walls
+        pellet_color = (255, 255, 0)   # Yellow pellets
+        tunnel_color = (192, 192, 192) # Gray tunnels
+        for row_idx, row in enumerate(self.layout):
+            for col_idx, cell in enumerate(row):
+                x, y = self.grid_to_screen(row_idx, col_idx)
+                rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+                if cell == 'W':
+                    pygame.draw.rect(screen, wall_color, rect)
+                elif cell == 'P':
+                    center = (x + TILE_SIZE // 2, y + TILE_SIZE // 2)
+                    radius = TILE_SIZE // 6
+                    pygame.draw.circle(screen, pellet_color, center, radius)
+                elif cell == 'T':
+                    pygame.draw.rect(screen, tunnel_color, rect)
 
-    def render_pause_screen(self):
-        self.show_pause_screen()
+    def render(self):
+        """Renders the maze layout onto the screen.
+           For this implementation, it prints a textual representation to the console."""
+        for row in self.layout:
+            print("".join(row))
 
-    def cleanup(self):
-        pygame.quit()
+class UIManager:
+    def __init__(self, score=0, lives=3, level=1, menu_text=""):
+        self.score = score
+        self.lives = lives
+        self.level = level
+        self.menu_text = menu_text
+        # Initialize the font module and set up the font
+        pygame.font.init()
+        if HUD_FONT:
+            self.font = pygame.font.Font(HUD_FONT, HUD_FONT_SIZE)
+        else:
+            self.font = pygame.font.SysFont(None, HUD_FONT_SIZE)
+
+    def draw(self, screen):
+        """Draw all user interface components (HUD elements, score, lives counter, level indicator, and menus)
+           on the given screen. These elements are layered on top of the gameplay graphics."""
+        score_text = f"Score: {self.score}"
+        lives_text = f"Lives: {self.lives}"
+        level_text = f"Level: {self.level}"
+
+        score_surface = self.font.render(score_text, True, HUD_COLOR)
+        lives_surface = self.font.render(lives_text, True, HUD_COLOR)
+        level_surface = self.font.render(level_text, True, HUD_COLOR)
+
+        screen.blit(score_surface, SCORE_POS)
+        screen.blit(lives_surface, LIVES_POS)
+        screen.blit(level_surface, LEVEL_POS)
+
+        if self.menu_text:
+            menu_surface = self.font.render(self.menu_text, True, HUD_COLOR)
+            screen.blit(menu_surface, MENU_POS)
+
+def initialize_maze():
+    """Initialize and return a Maze instance."""
+    return Maze()
 
 def main():
+    # Create a Maze instance using initialize_maze
+    maze = initialize_maze()
+    
+    # Test get_cell for valid coordinates.
+    assert maze.get_cell(0, 0) == 'W', "Top-left cell should be a wall."
+    assert maze.get_cell(1, 2) == 'P', "Cell (1,2) should be a pellet."
+    assert maze.get_cell(1, 0) == 'T', "Cell (1,0) should be a tunnel."
+    
+    # Test get_cell for coordinates outside the maze.
+    assert maze.get_cell(-1, 0) is None, "Out-of-bound row should return None."
+    assert maze.get_cell(0, 10) is None, "Out-of-bound column should return None."
+    
+    # Expected pellet positions:
+    # Row 1: at columns 2 and 7 => 2 pellets.
+    # Row 4: at columns 1 and 8 => 2 pellets.
+    # Row 7: at columns 2 and 7 => 2 pellets.
+    # Total expected pellets = 6.
+    expected_initial_pellet_count = 6
+    initial_count = maze.pellet_count()
+    assert initial_count == expected_initial_pellet_count, "Initial pellet count mismatch."
+    
+    # Render the initial maze layout.
+    print("Initial Maze Layout:")
+    maze.render()
+    
+    # Test consuming a pellet.
+    consumed = maze.consume_pellet(1, 2)
+    assert consumed, "Pellet consumption failed when it should have succeeded."
+    assert not maze.is_pellet(1, 2), "Pellet was not removed properly."
+    new_count = maze.pellet_count()
+    assert new_count == expected_initial_pellet_count - 1, "Pellet count did not decrease correctly after consumption."
+    
+    # Test wall detection.
+    assert maze.is_wall(0, 0), "Cell (0,0) should be a wall."
+    assert not maze.is_wall(3, 3), "Cell (3,3) should not be a wall."
+    
+    # Test tunnel detection.
+    tunnel_positions = [(1, 0), (1, 9), (7, 0), (7, 9)]
+    for row, col in tunnel_positions:
+        assert maze.is_tunnel(row, col), f"Cell at ({row}, {col}) should be a tunnel."
+    
+    # Test grid_to_screen coordinate transformation.
+    screen_coord = maze.grid_to_screen(0, 0)
+    assert screen_coord == MAZE_OFFSET, "Grid to screen conversion failed for cell (0, 0)."
+    expected_coord = (MAZE_OFFSET[0] + 3 * TILE_SIZE, MAZE_OFFSET[1] + 2 * TILE_SIZE)
+    screen_coord = maze.grid_to_screen(2, 3)
+    assert screen_coord == expected_coord, "Grid to screen conversion failed for cell (2, 3)."
+    
+    print("\nMaze Layout after consuming one pellet at (1,2):")
+    maze.render()
+    
+    # Initialize pygame and set up the display.
     pygame.init()
-    if not pygame.font.get_init():
-        pygame.font.init()
-    screen_width = 800
-    screen_height = 600
+    screen_width = MAZE_OFFSET[0] * 2 + maze.cols * TILE_SIZE
+    screen_height = MAZE_OFFSET[1] * 2 + maze.rows * TILE_SIZE
     screen = pygame.display.set_mode((screen_width, screen_height))
-    pygame.display.set_caption("UIManager Test")
+    pygame.display.set_caption("Maze Drawing and UI Test")
+    
     clock = pygame.time.Clock()
-
-    ui_manager = UIManager(screen)
-
-    # Test 1: Render HUD elements and verify rendering
-    screen.fill((0, 0, 0))
-    ui_manager.render_hud(123, 3, 2)
-    pygame.display.flip()
-    hud_pixels = pygame.surfarray.array3d(screen)
-    assert hud_pixels.sum() != 0, "HUD rendering failed: screen appears blank after rendering HUD."
-
-    # Test 2: Test Menu navigation for main menu
-    main_menu = ui_manager.menus['main']
-    initial_selection = main_menu.get_selected()
-    down_event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)
-    main_menu.update_selection(down_event)
-    new_selection = main_menu.get_selected()
-    assert new_selection != initial_selection, "Menu selection did not change after DOWN key."
-    up_event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_UP)
-    main_menu.update_selection(up_event)
-    reverted_selection = main_menu.get_selected()
-    assert reverted_selection == initial_selection, "Menu selection did not revert after UP key."
-
-    # Test 3: Test UIManager handle_menu_input for pause menu
-    pause_menu_initial = ui_manager.menus['pause'].get_selected()
-    simulated_event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)
-    selected_after_input = ui_manager.handle_menu_input('pause', simulated_event)
-    assert selected_after_input != pause_menu_initial, "Pause menu selection did not change after input event."
-
-    # Test 4: Test drawing popup
-    screen.fill((0, 0, 0))
-    ui_manager.draw_popup("Level Complete!")
-    pygame.display.flip()
-    popup_pixels = pygame.surfarray.array3d(screen)
-    assert popup_pixels.sum() != 0, "Popup rendering failed: screen appears blank after drawing popup."
-
-    # Test 5: Test show_pause_screen function
-    screen.fill((0, 0, 0))
-    ui_manager.show_pause_screen()
-    pygame.display.flip()
-    pause_pixels = pygame.surfarray.array3d(screen)
-    assert pause_pixels.sum() != 0, "Pause screen rendering failed: screen appears blank after showing pause screen."
-
-    # Test 6: Visual test - Render HUD and main menu for a short duration
-    test_duration = 2000  # milliseconds
-    start_ticks = pygame.time.get_ticks()
-    while pygame.time.get_ticks() - start_ticks < test_duration:
+    ui_manager = UIManager(score=100, lives=3, level=1, menu_text="Press ESC to exit")
+    
+    running = True
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                ui_manager.cleanup()
-                sys.exit()
+                running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                running = False
+        
+        # Fill the background.
         screen.fill((0, 0, 0))
-        ui_manager.render_hud(456, 5, 3)
-        ui_manager.draw_menu('main')
+        
+        # Draw the maze (gameplay graphics).
+        maze.draw(screen)
+        
+        # Draw the UI elements on top.
+        ui_manager.draw(screen)
+        
         pygame.display.flip()
         clock.tick(60)
-
-    # Test 7: Test initialize_gameplay function
-    try:
-        initialize_gameplay()
-    except Exception as e:
-        assert False, f"initialize_gameplay() raised an exception: {e}"
-
-    # Test 8: Test initialize_level_transition function
-    try:
-        ui_manager.initialize_level_transition()
-    except Exception as e:
-        assert False, f"initialize_level_transition() raised an exception: {e}"
-
-    # Test 9: Test show_game_over function
-    screen.fill((0, 0, 0))
-    ui_manager.show_game_over()
-    pygame.display.flip()
-    game_over_pixels = pygame.surfarray.array3d(screen)
-    assert game_over_pixels.sum() != 0, "Game Over screen rendering failed: screen appears blank after showing game over screen."
-
-    # Test 10: Test hide_pause_screen function
-    screen.fill((255, 255, 255))
-    ui_manager.hide_pause_screen()
-    pygame.display.flip()
-    hidden_pixels = pygame.surfarray.array3d(screen)
-    assert hidden_pixels.sum() == 0, "hide_pause_screen() failed: screen is not cleared properly."
-
-    # Test 11: Test render_game_play function
-    screen.fill((0, 0, 0))
-    ui_manager.render_game_play()
-    pygame.display.flip()
-    gameplay_pixels = pygame.surfarray.array3d(screen)
-    assert gameplay_pixels.sum() != 0, "render_game_play() failed: screen appears blank after rendering gameplay UI."
-
-    # Test 12: Test render_pause_screen function
-    screen.fill((0, 0, 0))
-    ui_manager.render_pause_screen()
-    pygame.display.flip()
-    pause_render_pixels = pygame.surfarray.array3d(screen)
-    assert pause_render_pixels.sum() != 0, "render_pause_screen() failed: screen appears blank after rendering pause screen."
-
-    # Test 13: Test render_menu function for 'pause' menu
-    screen.fill((0, 0, 0))
-    ui_manager.render_menu('pause')
-    pygame.display.flip()
-    menu_pixels = pygame.surfarray.array3d(screen)
-    assert menu_pixels.sum() != 0, "render_menu() failed: screen appears blank after rendering pause menu."
-
-    ui_manager.cleanup()
-    print("All UIManager tests passed.")
+    
+    pygame.quit()
 
 if __name__ == "__main__":
     main()

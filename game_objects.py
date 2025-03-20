@@ -1,3 +1,5 @@
+import pygame
+
 try:
     import config
 except SyntaxError:
@@ -26,6 +28,9 @@ class PacMan:
         self.move()
 
     def draw(self, surface=None):
+        # Draw PacMan as a yellow circle
+        if surface is not None:
+            pygame.draw.circle(surface, (255, 255, 0), (int(self.position[0]), int(self.position[1])), config.SPRITE_WIDTH // 2)
         return f"PacMan drawn at {self.position} with sprite width {config.SPRITE_WIDTH}"
 
 class Ghost:
@@ -43,8 +48,11 @@ class Ghost:
         self.move()
 
     def draw(self, surface=None):
-        sprite_color = "blue" if self.state == "vulnerable" else "red"
-        return f"Ghost drawn at {self.position} with color {sprite_color} and sprite width {config.SPRITE_WIDTH}"
+        # Draw Ghost as a circle: blue if vulnerable, otherwise red.
+        color = (0, 0, 255) if self.state == "vulnerable" else (255, 0, 0)
+        if surface is not None:
+            pygame.draw.circle(surface, color, (int(self.position[0]), int(self.position[1])), config.SPRITE_WIDTH // 2)
+        return f"Ghost drawn at {self.position} with color {'blue' if self.state == 'vulnerable' else 'red'} and sprite width {config.SPRITE_WIDTH}"
 
 class Blinky(Ghost):
     def __init__(self, position, state="normal", speed=None):
@@ -88,6 +96,9 @@ class Pellet:
         self.collected = False
 
     def draw(self, surface=None):
+        # Draw Pellet as a small white circle
+        if surface is not None:
+            pygame.draw.circle(surface, (255, 255, 255), (int(self.position[0]), int(self.position[1])), 3)
         return f"Pellet drawn at {self.position}. Collected: {self.collected}"
 
 class BonusItem:
@@ -96,7 +107,30 @@ class BonusItem:
         self.collected = False
 
     def draw(self, surface=None):
+        # Draw BonusItem as a green square
+        if surface is not None:
+            rect = pygame.Rect(self.position[0] - config.SPRITE_WIDTH // 2,
+                               self.position[1] - config.SPRITE_HEIGHT // 2,
+                               config.SPRITE_WIDTH,
+                               config.SPRITE_HEIGHT)
+            pygame.draw.rect(surface, (0, 255, 0), rect)
         return f"BonusItem drawn at {self.position}. Collected: {self.collected}"
+
+def draw_objects(surface, objects):
+    # Draw all primary objects on the provided pygame surface
+    pacman = objects.get("pacman")
+    ghosts = objects.get("ghosts", [])
+    pellet = objects.get("pellet")
+    bonus_item = objects.get("bonus_item")
+
+    if pacman:
+        pacman.draw(surface)
+    for ghost in ghosts:
+        ghost.draw(surface)
+    if pellet:
+        pellet.draw(surface)
+    if bonus_item:
+        bonus_item.draw(surface)
 
 def initialize_objects():
     pacman = PacMan(position=(0, 0), direction=(1, 0), lives=3, score=0)
@@ -111,6 +145,10 @@ def initialize_objects():
     return {"pacman": pacman, "ghosts": ghosts, "pellet": pellet, "bonus_item": bonus_item}
 
 def main():
+    # Initialize pygame and create a surface for drawing (used only for demonstration purposes)
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    pygame.display.set_caption("PacMan Test")
     maze = Maze()
     
     # Initialize objects using the initialize_objects function
@@ -186,7 +224,16 @@ def main():
     expected_position = (prev_position[0] + config.GHOST_SPEED, prev_position[1])
     assert blinky.position == expected_position, "Ghost.update() did not update position correctly."
     
+    # Optionally, demonstrate drawing all objects on the pygame surface.
+    screen.fill((0, 0, 0))  # Clear screen with black background
+    draw_objects(screen, objects)
+    pygame.display.flip()
+    
+    # Wait briefly so we can see the window (for demonstration purposes only)
+    pygame.time.wait(500)
+    
     print("All tests passed successfully.")
+    pygame.quit()
 
 if __name__ == "__main__":
     main()
